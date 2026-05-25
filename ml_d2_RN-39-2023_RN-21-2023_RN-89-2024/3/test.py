@@ -16,7 +16,34 @@ LOCAL = True
 #################### TO-DO ####################
 
 
-model = None
+import torch.nn as nn
+
+# Istovetna arhitektura kao u treningu
+class BehavioralCloningModel(nn.Module):
+    def __init__(self):
+        super(BehavioralCloningModel, self).__init__()
+        self.net = nn.Sequential(
+            nn.Linear(108, 64),
+            nn.ReLU(),
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, 7)
+        )
+        
+    def forward(self, x):
+        return self.net(x)
+
+# Inicijalizacija modela
+model = BehavioralCloningModel()
+
+model.load_state_dict(th.load('minigrid_bc_model.pth', map_location=device))
+model.to(device)
+
+# Prebacivanje u float64 jer test.py to zahteva za ulazne podatke
+model.to(th.float64)
+
+# Režim evaluacije
+model.eval()
 
 
 ###############################################
