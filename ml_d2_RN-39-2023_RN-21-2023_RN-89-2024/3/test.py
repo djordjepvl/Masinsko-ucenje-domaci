@@ -16,34 +16,33 @@ LOCAL = True
 #################### TO-DO ####################
 
 
-import torch.nn as nn
+# Učitavanje sačuvanog rečnika sa matricama težina
+weights = th.load('minigrid_bc_model.pth', map_location=device)
 
-# Istovetna arhitektura kao u treningu
-class BehavioralCloningModel(nn.Module):
-    def __init__(self):
-        super(BehavioralCloningModel, self).__init__()
-        self.net = nn.Sequential(
-            nn.Linear(108, 64),
-            nn.ReLU(),
-            nn.Linear(64, 32),
-            nn.ReLU(),
-            nn.Linear(32, 7)
-        )
-        
-    def forward(self, x):
-        return self.net(x)
+# Izvlačenje pojedinačnih matrica i prebacivanje u float64 (jer test.py to zahteva)
+W1 = weights['W1'].to(th.float64)
+b1 = weights['b1'].to(th.float64)
+W2 = weights['W2'].to(th.float64)
+b2 = weights['b2'].to(th.float64)
+W3 = weights['W3'].to(th.float64)
+b3 = weights['b3'].to(th.float64)
 
-# Inicijalizacija modela
-model = BehavioralCloningModel()
+# Definišemo funkciju koja će zameniti uobičajeni model(obs) poziv
+def manual_model(obs):
+    # Prolaz kroz prvi sloj + ReLU
+    z1 = obs @ W1 + b1
+    a1 = th.clamp(z1, min=0)
+    
+    # Prolaz kroz drugi sloj + ReLU
+    z2 = a1 @ W2 + b2
+    a2 = th.clamp(z2, min=0)
+    
+    # Krajnji izlaz (Logits)
+    logits = a2 @ W3 + b3
+    return logits
 
-model.load_state_dict(th.load('minigrid_bc_model.pth', map_location=device))
-model.to(device)
-
-# Prebacivanje u float64 jer test.py to zahteva za ulazne podatke
-model.to(th.float64)
-
-# Režim evaluacije
-model.eval()
+# Dodela našeg ručnog modela promenljivoj koju test.py koristi
+model = manual_model
 
 
 ###############################################
